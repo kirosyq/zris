@@ -1,5 +1,5 @@
 '''
-chains : arbitrum | optimism | bsc | polygon | base | avalanche | ethereum | scroll 
+chains : arbitrum | optimism | bsc | polygon | base | avalanche | ethereum | scroll | zksync
 '''
 
 RETRY               = 0     # Количество попыток при ошибках/фейлах
@@ -24,8 +24,8 @@ class ValueMintBridge:
 class ValueMint:
     '''mint'''
 
-    chain = ['arbitrum', 'bsc', 'optimism']
-    amount_mint = [2, 3] # от скольки до скольки нфт минтим
+    chain = ['zksync', 'arbitrum', 'base']
+    amount_mint = [1, 4] # от скольки до скольки нфт минтим
 
 class ValueBridge:
     '''
@@ -34,7 +34,7 @@ class ValueBridge:
     '''
 
     from_chain  = ['arbitrum', 'optimism']
-    to_chain    = ['bsc']
+    to_chain    = ['bsc', 'base', 'zksync']
 
     amount = 1 # сколько нфт бриджим из сети from_chain
     bridge_all = True # True / False. True если хочешь сбриджить все нфт которые у тебя есть в сети from_chain если их больше amount
@@ -51,6 +51,6 @@ class ValueUltra:
     '''
 
     max_bridge_price = 2 # $ если бридж с этой сети стоит дороже, эта сеть не выберется для бриджа
-    bridges_count = [2, 3]
+    bridges_count = [1, 4]
     from_chain = [] # можно оставить пустым, тогда скрипт сам выберет самую дешевую сеть из списка included_chains
     included_chains = ['optimism', 'scroll', 'arbitrum', 'bsc', 'avalanche', 'base'] # >= 2 сетей

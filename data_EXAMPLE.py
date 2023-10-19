@@ -1,5 +1,5 @@
-TG_TOKEN = 'your_tg_token'
-TG_ID = 123 # your tg id
+TG_TOKEN = 'your_tgbot_token' # создать можешь здесь : https://t.me/BotFather
+TG_ID = 0 # узнать можешь здесь : https://t.me/getmyid_bot
 
 # change rpc
 DATA = {

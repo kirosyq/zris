@@ -244,7 +244,7 @@ class MintBridge:
         self.maxPrice = ValueMintBridge.max_price
         self.amount = random.randint(*ValueMintBridge.amount)
         self.web3Manager = Web3Manager(key, self.chainFrom)
-        self.module_str = f'{self.number} | mint&bridge'
+        self.module_str = f'{self.number} {self.web3Manager.address} | mint&bridge'
 
     async def get_nft_balance_in_chain(self, address) -> Decimal:
         return await self.contract.functions.balanceOf(Web3.to_checksum_address(address)).call()
@@ -409,7 +409,8 @@ class Ultra:
         self.chains = ValueUltra.included_chains
         if self.fromChain != None and self.fromChain not in self.chains:
             self.chains.append(self.fromChain)
-        self.module_str = f'{self.number} | ultra'
+        self.manager = Web3Manager(self.key, "ethereum")
+        self.module_str = f'{self.number} {self.manager.address} | ultra'
         self.bridgeMatrix = None
 
     def get_address(self, key):
@@ -759,7 +760,7 @@ class Ultra:
             
             contracts = {LAYERZERO_CHAINS_ID[chain]: await get_contract(chain) for chain in availableChains}
             
-            logger.info(f'{self.module_str} | building lowcost bridges matrix')
+            # logger.info(f'{self.module_str} | building lowcost bridges matrix')
             lowcostBridgesMatrix = await self.get_lowcost_bridges(fromAddress, contracts, tokensPricesUsd, web3Managers)
             if len(lowcostBridgesMatrix.keys()) < 2 and srcLzChain not in lowcostBridgesMatrix.keys():
                 logger.error(f'{self.module_str} | less than 2 chains are available, max bridge price is too low or insufficient balances')

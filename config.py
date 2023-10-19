@@ -17,6 +17,7 @@ contracts = {
     'base': '0x178608fFe2Cca5d36f3Fc6e69426c4D3A5A74A41',
     # 'zora': '0x178608fFe2Cca5d36f3Fc6e69426c4D3A5A74A41',
     'scroll': '0xEB22C3e221080eAD305CAE5f37F0753970d973Cd',
+    'zksync': '0x7dA50bD0fb3C2E868069d9271A2aeb7eD943c2D6',
 }
 
 ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
@@ -51,6 +52,7 @@ LAYERZERO_CHAINS_ID = {
     'base'      : 184,
     'zora'      : 195,
     'scroll'    : 214,
+    'zksync'    : 165,
 }
 
 EXCLUDED_LZ_PAIRS = [
@@ -58,6 +60,8 @@ EXCLUDED_LZ_PAIRS = [
     (195, 106),
     (214, 195),
     (214, 184),
+    (165, 214),
+    (165, 195),
 ]
 ZERIUS_SEND_GAS_LIMIT = {
     101: 300000,
@@ -69,6 +73,7 @@ ZERIUS_SEND_GAS_LIMIT = {
     184: 300000,
     195: 300000,
     214: 300000,
+    165: 1800000,
 }
 ZERIUS_MINT_GAS_LIMIT = {
     101: 170000,
@@ -80,6 +85,7 @@ ZERIUS_MINT_GAS_LIMIT = {
     184: 170000,
     195: 170000,
     214: 170000,
+    165: 1000000,
 }
 COINGECKO_URL = "https://api.coingecko.com/api/v3/simple/price?ids={}&vs_currencies=usd"
 LZ_CHAIN_TO_TOKEN = {
@@ -92,6 +98,7 @@ LZ_CHAIN_TO_TOKEN = {
     184: 'ETH',
     195: 'ETH',
     214: 'ETH',
+    165: 'ETH',
 }
 
 STR_DONE = '✅ '

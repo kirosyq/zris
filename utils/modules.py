@@ -868,17 +868,20 @@ async def process_batches(func, wallets):
 
     number = 0
     for batch in batches:
-        if CHECK_GWEI:
-            wait_gas()
+        try:
+            if CHECK_GWEI:
+                wait_gas()
 
-        tasks = []
-        for key in batch:
-            number += 1
-            if is_private_key(key):
-                tasks.append(asyncio.create_task(worker(func, key, f'[{number}/{len(wallets)}]')))
-            else:
-                logger.error(f"{key} isn't private key")
-        res = await asyncio.gather(*tasks)
+            tasks = []
+            for key in batch:
+                number += 1
+                if is_private_key(key):
+                    tasks.append(asyncio.create_task(worker(func, key, f'[{number}/{len(wallets)}]')))
+                else:
+                    logger.error(f"{key} isn't private key")
+            res = await asyncio.gather(*tasks)
+        except Exception as error:
+            logger.error(error)
 
         if (TG_BOT_SEND and len(list_send) > 0):
             send_msg()

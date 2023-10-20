@@ -881,15 +881,17 @@ async def process_batches(func, wallets):
                 else:
                     logger.error(f"{key} isn't private key")
             res = await asyncio.gather(*tasks)
+
+            if (TG_BOT_SEND and len(list_send) > 0):
+                send_msg()
+                
+            if IS_SLEEP and any(res):
+                await async_sleeping(*DELAY_SLEEP)
         except Exception as error:
             logger.error(error)
 
-        if (TG_BOT_SEND and len(list_send) > 0):
-            send_msg()
         list_send.clear()
 
-        if IS_SLEEP and any(res):
-            await async_sleeping(*DELAY_SLEEP)
 
 async def main(module):
     func, module_name = get_module(module)

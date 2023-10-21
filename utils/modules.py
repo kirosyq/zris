@@ -160,6 +160,11 @@ class Bridger:
         self.module_str = f'{self.number} {self.manager.address} | bridge nft {self.from_chain} => {self.to_chain}'
 
     async def run(self, retry=0):
+
+        if (LAYERZERO_CHAINS_ID[self.from_chain], LAYERZERO_CHAINS_ID[self.to_chain]) or (LAYERZERO_CHAINS_ID[self.to_chain], LAYERZERO_CHAINS_ID[self.from_chain]) in EXCLUDED_LZ_PAIRS:
+            logger.error(f'{self.module_str} | this pair of networks is not available for bridge')
+            return False
+
         self.contract = await get_contract(self.from_chain)
         count = await get_balance_nfts_amount(self.contract, self.manager.address)
         tokens_id = [await get_balance_nfts_id(self.contract, self.manager.address, i) for i in range(count)]
@@ -239,12 +244,12 @@ class MintBridge:
     def __init__(self, number, key) -> None:
         self.number = number
         self.key = key
-        self.chainFrom = random.choice(ValueMintBridge.from_chain)
-        self.chainTo = random.choice(ValueMintBridge.to_chain)
+        self.from_chain = random.choice(ValueMintBridge.from_chain)
+        self.to_chain = random.choice(ValueMintBridge.to_chain)
         self.maxPrice = ValueMintBridge.max_price
         self.amount = random.randint(*ValueMintBridge.amount)
-        self.web3Manager = Web3Manager(key, self.chainFrom)
-        self.module_str = f'{self.number} {self.web3Manager.address} | mint&bridge'
+        self.web3Manager = Web3Manager(key, self.from_chain)
+        self.module_str = f'{self.number} {self.web3Manager.address} | mint&bridge | {self.from_chain} => {self.to_chain}'
 
     async def get_nft_balance_in_chain(self, address) -> Decimal:
         return await self.contract.functions.balanceOf(Web3.to_checksum_address(address)).call()
@@ -273,7 +278,7 @@ class MintBridge:
         coingeckoRequestUrl = COINGECKO_URL.format(",".join(tokenToId.values()))
         response = requests.get(coingeckoRequestUrl).json()
         prices = {token: response[tokenToId[token]]["usd"] for token in tokenToId.keys()}
-        token = LZ_CHAIN_TO_TOKEN[LAYERZERO_CHAINS_ID[self.chainFrom]]
+        token = LZ_CHAIN_TO_TOKEN[LAYERZERO_CHAINS_ID[self.from_chain]]
         price = prices[token]
         return price
     
@@ -286,16 +291,16 @@ class MintBridge:
 
         adapterParams = encode_packed(
             ["uint16", "uint256"],
-            [1, await self.contract.functions.minDstGasLookup(LAYERZERO_CHAINS_ID[self.chainTo], 1).call()]
+            [1, await self.contract.functions.minDstGasLookup(LAYERZERO_CHAINS_ID[self.to_chain], 1).call()]
         )
         nativeFee, _ = await self.contract.functions.estimateSendFee(
-            LAYERZERO_CHAINS_ID[self.chainTo],
+            LAYERZERO_CHAINS_ID[self.to_chain],
             address,
             await self.contract.functions.tokenCounter().call() - 1,
             False,
             adapterParams
         ).call()
-        gas = ZERIUS_SEND_GAS_LIMIT[LAYERZERO_CHAINS_ID[self.chainFrom]] * await w3.eth.gas_price
+        gas = ZERIUS_SEND_GAS_LIMIT[LAYERZERO_CHAINS_ID[self.from_chain]] * await w3.eth.gas_price
         sum = nativeFee + gas
         sumEth = Web3.from_wei(sum, 'ether')
         sumUsd = sumEth * tokenPrice
@@ -303,7 +308,12 @@ class MintBridge:
         return mintFeeUsd + sumUsd
 
     async def main(self):
-        self.contract = await get_contract(self.chainFrom)
+
+        if (LAYERZERO_CHAINS_ID[self.from_chain], LAYERZERO_CHAINS_ID[self.to_chain]) or (LAYERZERO_CHAINS_ID[self.to_chain], LAYERZERO_CHAINS_ID[self.from_chain]) in EXCLUDED_LZ_PAIRS:
+            logger.error(f'{self.module_str} | this pair of networks is not available for bridge')
+            return False
+        
+        self.contract = await get_contract(self.from_chain)
         address = self.get_address(self.key)
         if address == None:
             logger.error(f'{self.module_str} | invalid key')
@@ -316,8 +326,8 @@ class MintBridge:
             list_send.append(f'{STR_CANCEL}{self.module_str}')
             return
         
-        logger.info(f'{self.module_str} | minting on {self.chainFrom}')
-        func = Mint(self.key, self.number, [self.chainFrom])
+        logger.info(f'{self.module_str} | minting on {self.from_chain}')
+        func = Mint(self.key, self.number, [self.from_chain])
         retryMint = 0
         statusMint = 0
         tx_link_mint = ""
@@ -336,9 +346,9 @@ class MintBridge:
                     logger.info(f'try again in 10 sec.')
             else:
                 logger.success(f'{self.module_str} | MINT: {tx_link_mint}')
-                list_send.append(f'{STR_CANCEL}{self.module_str} MINT {self.chainFrom}')
+                list_send.append(f'{STR_CANCEL}{self.module_str} MINT {self.from_chain}')
         if statusMint == 0:
-            list_send.append(f'{STR_CANCEL}{self.module_str} MINT {self.chainFrom}')
+            list_send.append(f'{STR_CANCEL}{self.module_str} MINT {self.from_chain}')
             return False
         await async_sleeping(*DELAY_SLEEP)
         
@@ -347,21 +357,21 @@ class MintBridge:
         while balanceOnStart == 0:
             if (timer >= MAX_WAITING_NFT):
                 break
-            logger.info(f'waiting for nft on {self.chainFrom}. try again in 10 sec.')
+            logger.info(f'waiting for nft on {self.from_chain}. try again in 10 sec.')
             timer += 10
             await asyncio.sleep(10)
             balanceOnStart = await self.get_nft_balance_in_chain(address)
         if balanceOnStart == 0:
-            logger.error(f'{self.module_str} | error timeout waiting nft on {self.chainFrom}')
+            logger.error(f'{self.module_str} | error timeout waiting nft on {self.from_chain}')
             list_send.append(f'{STR_CANCEL}{self.module_str}')
             return False
-        logger.success(f'{self.module_str} | balance on {self.chainFrom}: {balanceOnStart}')
+        logger.success(f'{self.module_str} | balance on {self.from_chain}: {balanceOnStart}')
         await async_sleeping(*DELAY_SLEEP)
 
         tokenId = await self.get_first_token_id_on_chain(address)
-        logger.info(f'{self.module_str} | start bridge token {tokenId} | {self.chainFrom} => {self.chainTo}')
+        logger.info(f'{self.module_str} | start bridge token {tokenId} | {self.from_chain} => {self.to_chain}')
 
-        function = Bridge(self.key, self.number, self.chainFrom, self.chainTo, tokenId, self.web3Manager, self.module_str, self.contract)
+        function = Bridge(self.key, self.number, self.from_chain, self.to_chain, tokenId, self.web3Manager, self.module_str, self.contract)
 
         retryBridge = 0
         status = 0
@@ -370,7 +380,7 @@ class MintBridge:
             retryBridge += 1
             contract_txn = await function.get_txn()
             if not contract_txn:
-                logger.error(f'{self.module_str} | error getting contract_txn for bridge {self.chainFrom} -> {self.chainTo}')
+                logger.error(f'{self.module_str} | error getting contract_txn for bridge {self.from_chain} -> {self.to_chain}')
                 list_send.append(f'{STR_CANCEL}{self.module_str}')
                 return
         
@@ -380,8 +390,8 @@ class MintBridge:
                 if retryBridge < RETRY:
                     logger.info(f'try again in 10 sec.')
             else:
-                logger.success(f'{self.module_str} | BRIDGE {self.chainFrom} -> {self.chainTo}: {tx_link}')
-                list_send.append(f'{STR_CANCEL}{self.module_str} BRIDGE {self.chainFrom} -> {self.chainTo}')
+                logger.success(f'{self.module_str} | BRIDGE {self.from_chain} -> {self.to_chain}: {tx_link}')
+                list_send.append(f'{STR_CANCEL}{self.module_str} BRIDGE {self.from_chain} -> {self.to_chain}')
         if status == 0:
             return False
         return True
@@ -441,8 +451,8 @@ class Ultra:
         coingeckoRequestUrl = COINGECKO_URL.format(",".join(tokenToId.values()))
         response = requests.get(coingeckoRequestUrl).json()
         prices = {token: response[tokenToId[token]]["usd"] for token in tokenToId.keys()}
-        chainToPrice = {LAYERZERO_CHAINS_ID[chain]: prices[LZ_CHAIN_TO_TOKEN[LAYERZERO_CHAINS_ID[chain]]] for chain in self.chains}
-        return chainToPrice
+        to_chainPrice = {LAYERZERO_CHAINS_ID[chain]: prices[LZ_CHAIN_TO_TOKEN[LAYERZERO_CHAINS_ID[chain]]] for chain in self.chains}
+        return to_chainPrice
     
     async def estimate_bridge(
             self, 
@@ -636,7 +646,7 @@ class Ultra:
             randomDst = random.randint(0, randomCeiling)
             dstLzChain = lowcostBridgesMatrix[srcLzChain][randomDst][0]
             dstChainName = self.get_chain_name_for_lz_id(dstLzChain)
-            logger.success(f'{self.module_str} | {bridgesCount} bridge: found cheapest dst - {dstChainName}')
+            # logger.success(f'{self.module_str} | {bridgesCount} bridge: found cheapest dst - {dstChainName}')
             
         tokenId = await self.get_first_token_id_on_chain(address, contracts[srcLzChain])
         logger.info(f'{self.module_str} | start bridge token {tokenId} | {srcChainName} => {dstChainName}')
@@ -705,12 +715,12 @@ class Ultra:
         
         if (self.fromChain == None):
             availableLzChainsForBridge = list(lowcostBridgesMatrix.keys())
-            logger.success(f'{self.module_str} | found {len(availableLzChainsForBridge)} available LZ chains: {", ".join([str(i) for i in availableLzChainsForBridge])}')
+            # logger.success(f'{self.module_str} | found {len(availableLzChainsForBridge)} available LZ chains: {", ".join([str(i) for i in availableLzChainsForBridge])}')
     
-            logger.info(f'{self.module_str} | estimating mint fees')
+            # logger.info(f'{self.module_str} | estimating mint fees')
             firstMint = await self.get_mint_prices(fromAddress, tokensPricesUsd, contracts, web3Managers, availableLzChainsForBridge)
     
-            logger.info(f'{self.module_str} | searching for the cheapest chain to start bridging')
+            # logger.info(f'{self.module_str} | searching for the cheapest chain to start bridging')
             mintBridge = {chain: firstMint[chain] + lowcostBridgesMatrix[chain][0][1] for chain in availableLzChainsForBridge}
             mintBridgeSorted = sorted(mintBridge.items(), key=lambda item: item[1])
     
@@ -719,7 +729,7 @@ class Ultra:
     
             srcLzChain = mintBridgeSorted[randomStart][0]
             srcChainName = self.get_chain_name_for_lz_id(srcLzChain)
-            logger.success(f'{self.module_str} | found the cheapest LZ chain to start bridging - {srcChainName}')
+            logger.info(f'{self.module_str} | found the cheapest LZ chain to start bridging - {srcChainName}')
         else:
             srcLzChain = LAYERZERO_CHAINS_ID[self.fromChain]
             srcChainName = self.fromChain
@@ -869,6 +879,7 @@ async def process_batches(func, wallets):
 
     number = 0
     for batch in batches:
+        res = []
         try:
             if CHECK_GWEI:
                 wait_gas()
@@ -882,13 +893,14 @@ async def process_batches(func, wallets):
                     logger.error(f"{key} isn't private key")
             res = await asyncio.gather(*tasks)
 
-            if (TG_BOT_SEND and len(list_send) > 0):
-                send_msg()
-                
-            if IS_SLEEP and any(res):
-                await async_sleeping(*DELAY_SLEEP)
         except Exception as error:
             logger.error(error)
+
+        if (TG_BOT_SEND and len(list_send) > 0):
+            send_msg()
+            
+        if IS_SLEEP and any(res):
+            await async_sleeping(*DELAY_SLEEP)
 
         list_send.clear()
 

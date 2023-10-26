@@ -92,7 +92,7 @@ class Bridge:
         return await self.contract.functions.minDstGasLookup(dstChainId, funcType).call()
 
     async def get_txn(self):
-        # try:
+        try:
             adapterParams = encode_packed(
                 ["uint16", "uint256"],
                 [1, await self.get_min_dst_gas_lookup(LAYERZERO_CHAINS_ID[self.to_chain], 1)] # lzVersion, gasLimit - extra for minting
@@ -145,10 +145,10 @@ class Bridge:
             contract_txn = await self.manager.add_gas_limit_layerzero(contract_txn)
             return contract_txn
             
-        # except Exception as error:
-        #     logger.error(error)
-        #     list_send.append(f'{STR_CANCEL}{self.module_str} | {error}')
-        #     return False
+        except Exception as error:
+            logger.error(error)
+            list_send.append(f'{STR_CANCEL}{self.module_str} | {error}')
+            return False
 
 class Bridger:
     def __init__(self, number, key):
@@ -361,6 +361,7 @@ class MintBridge:
             timer += 10
             await asyncio.sleep(10)
             balanceOnStart = await self.get_nft_balance_in_chain(address)
+        await async_sleeping(*DELAY_SLEEP)
         if balanceOnStart == 0:
             logger.error(f'{self.module_str} | error timeout waiting nft on {self.from_chain}')
             list_send.append(f'{STR_CANCEL}{self.module_str}')
@@ -630,7 +631,7 @@ class Ultra:
         while balanceOnStart == 0:
             if (timer >= MAX_WAITING_NFT):
                 break
-            logger.info(f'Waiting for nft on {srcChainName}. Try again in 10 sec.')
+            logger.info(f'waiting for nft on {srcChainName}. Try again in 10 sec.')
             timer += 10
             await asyncio.sleep(10)
             balanceOnStart = await self.get_nft_balance_in_chain(address, contracts[srcLzChain])
@@ -639,6 +640,7 @@ class Ultra:
             list_send.append(f'{STR_CANCEL}{self.module_str}')
             return False, None
         logger.success(f'{self.module_str} | balance on {srcChainName}: {balanceOnStart}')
+        await async_sleeping(*DELAY_SLEEP)
 
         if dstLzChain == None:
             logger.info(f'{self.module_str} | {bridgesCount} bridge: searching for cheapest dst')

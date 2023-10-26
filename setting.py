@@ -1,56 +1,57 @@
 '''
-chains : arbitrum | optimism | bsc | polygon | base | avalanche | ethereum | scroll | zksync
+chains : arbitrum | optimism | bsc | polygon | base | avalanche | ethereum | scroll | zksync | linea | nova
 '''
 
-RETRY               = 0     # Количество попыток при ошибках/фейлах
-WALLETS_IN_BATCH    = 1     # Сколько кошельков запускаем в одном потоке (одновременно)
-CHECK_GWEI          = True  # Включить/выключить проверку base Gwei
-MAX_GWEI            = 40    # Максимальный Gwei (см. https://etherscan.io/gastracker)
-TG_BOT_SEND         = True  # Включить/выключить отправку результатов в Telegram-бота
-IS_SLEEP            = True  # Включить/выключить задержку между кошельками
-DELAY_SLEEP         = [3, 5] # Диапазон задержки между кошельками (секунды)
-RANDOMIZER          = True  # Включить/выключить случайное перемешивание кошельков
-MAX_WAITING_NFT     = 120   # Сколько максимум по времени (sec.) ждем нфт после бриджа в destination chain
+RETRY = 0 # Number of attempts when errors/fails occur
+WALLETS_IN_BATCH = 1 # How many wallets are launched in one thread (simultaneously)
+CHECK_GWEI = True # Enable/disable checking of base Gwei
+MAX_GWEI = 25 # Maximum Gwei (see https://etherscan.io/gastracker)
+TG_BOT_SEND = True # Enable/disable sending results to the Telegram bot
+IS_SLEEP = True # Enable/disable delay between wallets
+DELAY_SLEEP = [50, 100] # Range of delay between wallets (seconds)
+RANDOMIZER = True # Enable/disable random shuffling of wallets
+MAX_WAITING_NFT = 120 # Maximum wait time (sec.) for NFTs after bridging to the destination chain
 
 class ValueMintBridge:
     '''mint + bridge'''
 
-    from_chain  = ['bsc', 'arbitrum'] # рандомно выбираем из дешевых сетей, если пусто
-    to_chain    = ['scroll', 'optimism'] # рандомно выбираем из дешевых сетей, если пусто
-    max_price = 3 # $
+    from_chain  = ['nova'] # Randomly selected from cheaper networks if empty
+    to_chain    = ['polygon', 'optimism', 'bsc'] # Randomly selected from cheaper networks if empty
+    max_price = 3 # USD
 
-    amount = [1, 2] # от скольки до скольки нфт минтим + бриджим из сети from_chain
+    amount = [1, 2] # Range of NFTs to mint and bridge from the 'from_chain' network
+
 
 class ValueMint:
     '''mint'''
 
-    chain = ['zksync', 'arbitrum', 'base']
-    amount_mint = [1, 4] # от скольки до скольки нфт минтим
+    chain = ['nova', 'zksync']
+    amount_mint = [1, 3] # Range of NFTs to mint
 
 class ValueBridge:
-    '''
-    bridge
-    ищет nft в from_chain и с первой сети где найдет, бриджит на сеть из to_chain которая выберется рандомно
-    '''
+    """
+    Bridge
+    Searches for NFTs in 'from_chain' and, upon finding any, bridges them to a network randomly selected from 'to_chain'.
+    """
 
-    from_chain  = ['arbitrum', 'optimism']
-    to_chain    = ['bsc', 'base', 'zksync']
+    from_chain = ['nova']  # List of networks to search for NFTs
+    to_chain = ['optimism', 'scroll', 'arbitrum', 'bsc', 'avalanche', 'base', 'linea']  # List of potential destination networks selected randomly
 
-    amount = 1 # сколько нфт бриджим из сети from_chain
-    bridge_all = True # True / False. True если хочешь сбриджить все нфт которые у тебя есть в сети from_chain если их больше amount
+    amount = 1  # The number of NFTs to bridge from the 'from_chain' network
+    bridge_all = True  # True/False. If True, all available NFTs in the 'from_chain' network will be bridged if they exceed 'amount'.
 
 class ValueUltra:
-    '''
-    1. составляет список всех сетей, где есть нативный токен (>= 1$) для бриджа
-    2. ищет топ 3 самых дешевых бриджа для каждой сети из included_chains
-    3. вычисляет стоимость минта для каждой сети
-    4. выбирает топ 3 самые дешевые сети для минт + бридж, выбирает с какой сети начать. но если в from_chain есть список сетей, тогда выбирает одну сеть (рандомно) как первую для минта и первого бриджа
-    5. если нфт в первой сети уже есть, минта не будет. если нет - нфт минтится
-    6. минт происходит только в первой сети, дальше нфт будет только бриджиться
-    7. выбирается всегда 1 из топ 3 самых дешевых сетей (рандомно)
-    '''
+    """
+    1. Compiles a list of all networks where there is a native token (>= $1) for bridging.
+    2. Identifies the top 3 cheapest bridges for each network in 'included_chains'.
+    3. Calculates the minting cost for each network.
+    4. Selects the top 3 cheapest networks for mint + bridge and decides which network to start with. However, if 'from_chain' contains a list of networks, then one network is randomly selected as the first for minting and the initial bridge.
+    5. If NFTs are already present in the first network, no minting will occur. If not, an NFT is minted.
+    6. Minting occurs only in the first network; subsequently, the NFT will only be bridged.
+    7. Always selects 1 out of the top 3 cheapest networks (randomly).
+    """
 
-    max_bridge_price = 2 # $ если бридж с этой сети стоит дороже, эта сеть не выберется для бриджа
-    bridges_count = [1, 4]
-    from_chain = [] # можно оставить пустым, тогда скрипт сам выберет самую дешевую сеть из списка included_chains
-    included_chains = ['optimism', 'scroll', 'arbitrum', 'bsc', 'avalanche', 'base'] # >= 2 сетей
+    max_bridge_price = 1.5  # $ If the bridge from this network is more expensive, it will not be selected for bridging.
+    bridges_count = [1, 3]  # The range for the number of bridges.
+    from_chain = ['nova']  # Can be left empty, then the script will choose the cheapest network from 'included_chains'.
+    included_chains = ['optimism', 'scroll', 'arbitrum', 'bsc', 'avalanche', 'base', 'linea']  # Must include >= 2 networks.

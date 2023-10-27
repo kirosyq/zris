@@ -1,5 +1,5 @@
 '''
-chains : arbitrum | optimism | bsc | polygon | base | avalanche | ethereum | scroll | zksync | linea | nova
+chains : arbitrum | optimism | bsc | polygon | base | avalanche | ethereum | scroll | zksync | linea | nova | zora
 '''
 
 RETRY = 0 # Number of attempts when errors/fails occur
@@ -11,6 +11,7 @@ IS_SLEEP = True # Enable/disable delay between wallets
 DELAY_SLEEP = [50, 100] # Range of delay between wallets (seconds)
 RANDOMIZER = True # Enable/disable random shuffling of wallets
 MAX_WAITING_NFT = 120 # Maximum wait time (sec.) for NFTs after bridging to the destination chain
+USE_PROXY = True # Enable/disable proxy usage in web3 requests
 
 class ValueMintBridge:
     '''mint + bridge'''
@@ -25,8 +26,8 @@ class ValueMintBridge:
 class ValueMint:
     '''mint'''
 
-    chain = ['nova', 'zksync']
-    amount_mint = [1, 3] # Range of NFTs to mint
+    chain = ['nova', 'zksync', 'zora']
+    amount_mint = [2, 4] # Range of NFTs to mint
 
 class ValueBridge:
     """

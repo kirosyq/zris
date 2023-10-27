@@ -1,6 +1,6 @@
 from data import DATA
-from config import max_time_check_tx_status, ABI, contracts, STR_DONE, STR_CANCEL, WALLETS, LAYERZERO_CHAINS_ID, ZERO_ADDRESS, EXCLUDED_LZ_PAIRS, ZERIUS_MINT_GAS_LIMIT, ZERIUS_SEND_GAS_LIMIT, COINGECKO_URL, LZ_CHAIN_TO_TOKEN
-from setting import ValueMintBridge, ValueMint, ValueBridge, ValueUltra, RETRY, WALLETS_IN_BATCH, CHECK_GWEI, TG_BOT_SEND, IS_SLEEP, DELAY_SLEEP, MAX_GWEI, RANDOMIZER, MAX_WAITING_NFT
+from config import ABI, contracts, STR_DONE, STR_CANCEL, WALLETS, LAYERZERO_CHAINS_ID, ZERO_ADDRESS, EXCLUDED_LZ_PAIRS, ZERIUS_MINT_GAS_LIMIT, ZERIUS_SEND_GAS_LIMIT, COINGECKO_URL, LZ_CHAIN_TO_TOKEN, PROXIES
+from setting import ValueMintBridge, ValueMint, ValueBridge, ValueUltra, RETRY, WALLETS_IN_BATCH, CHECK_GWEI, TG_BOT_SEND, IS_SLEEP, DELAY_SLEEP, MAX_GWEI, RANDOMIZER, MAX_WAITING_NFT, USE_PROXY
 
 import time
 from loguru import logger
@@ -908,6 +908,13 @@ async def process_batches(func, wallets):
 
 
 async def main(module):
+
+    if USE_PROXY:
+        if len(PROXIES) == 0:
+            logger.error("You want to use proxies, but you haven't written them into the proxies.txt file")
+            raise ValueError("No proxies are defined")
+
+    
     func, module_name = get_module(module)
 
     if module == 5:

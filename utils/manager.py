@@ -1,5 +1,6 @@
 from data import DATA
-from config import max_time_check_tx_status
+from setting import USE_PROXY
+from config import max_time_check_tx_status, PROXIES
 import time
 from loguru import logger
 from web3 import Web3, AsyncHTTPProvider
@@ -14,10 +15,19 @@ class Web3Manager:
         self.web3 = self.get_web3()
         self.address = self.web3.eth.account.from_key(self.key).address
         self.chain_id = DATA[self.chain]['chain_id']
-
+    
     def get_web3(self):
         rpc = DATA[self.chain]['rpc']
-        return Web3(AsyncHTTPProvider(rpc), modules={"eth": (AsyncEth)}, middlewares=[])
+        web3 = Web3(AsyncHTTPProvider(rpc), modules={"eth": (AsyncEth)}, middlewares=[])
+
+        if USE_PROXY:
+            try:
+                proxy = random.choice(PROXIES)
+                web3 = Web3(AsyncHTTPProvider(rpc, request_kwargs={"proxy": proxy}), modules={"eth": (AsyncEth)}, middlewares=[])
+            except Exception as error:
+                logger.error(f'{error}. Use web3 without proxy')
+
+        return web3
     
     async def add_gas_limit(self, contract_txn):
 

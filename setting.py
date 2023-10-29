@@ -1,5 +1,5 @@
 '''
-chains : arbitrum | optimism | bsc | polygon | base | avalanche | ethereum | scroll | zksync | linea | nova | zora
+chains : arbitrum | optimism | bsc | polygon | base | avalanche | ethereum | scroll | zksync | linea | nova | zora | polygon_zkevm | fantom | core | celo | harmony | canto
 '''
 
 RETRY = 0 # Number of attempts when errors/fails occur
@@ -22,11 +22,10 @@ class ValueMintBridge:
 
     amount = [1, 2] # Range of NFTs to mint and bridge from the 'from_chain' network
 
-
 class ValueMint:
     '''mint'''
 
-    chain = ['nova', 'zksync', 'zora']
+    chain = ['harmony', 'celo', 'core']
     amount_mint = [2, 4] # Range of NFTs to mint
 
 class ValueBridge:

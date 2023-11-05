@@ -2,7 +2,7 @@
 chains : arbitrum | optimism | bsc | polygon | base | avalanche | ethereum | scroll | zksync | linea | nova | zora | polygon_zkevm | fantom | core | celo | harmony | canto
 '''
 
-RETRY = 0 # Number of attempts when errors/fails occur
+RETRY = 1 # Number of attempts when errors/fails occur
 WALLETS_IN_BATCH = 1 # How many wallets are launched in one thread (simultaneously)
 CHECK_GWEI = True # Enable/disable checking of base Gwei
 MAX_GWEI = 25 # Maximum Gwei (see https://etherscan.io/gastracker)
@@ -89,7 +89,6 @@ class ValueUltra:
     refuel_amount_from = 0 # Obtain from a certain amount of native token of the to_chain network
     refuel_amount_to   = 0 # Obtain up to a certain amount of native token of the to_chain network
 
-
 class ValueRefuel:
 
     '''
@@ -99,11 +98,11 @@ class ValueRefuel:
     to_chains   : avalanche | bsc | arbitrum | optimism | fantom | harmony | celo | moonbeam | gnosis | metis | core | polygon_zkevm | canto | zksync | nova | zora | base | scroll
     '''
 
-    from_chain = ['linea'] # Networks from which you want to perform refuel (>= 1 network)
-    to_chain   = ['base', 'avalanche', 'bsc', 'arbitrum'] # Networks to which you want to perform refuel (>= 1 network)
+    from_chain = ['arbitrum', 'bsc'] # Networks from which you want to perform refuel (>= 1 network)
+    to_chain   = ['core', 'metis', 'nova', 'gnosis', 'celo'] # Networks to which you want to perform refuel (>= 1 network)
 
-    amount_from         = 0.001 # Obtain from a certain amount of native token of the to_chain network
-    amount_to           = 0.002 # Obtain up to a certain amount of native token of the to_chain network
+    amount_from         = 0.000001 # Obtain from a certain amount of native token of the to_chain network
+    amount_to           = 0.00002 # Obtain up to a certain amount of native token of the to_chain network
 
     swap_all_balance    = False # True / False. If True, then refuel the entire balance
     min_amount_swap     = 0 # If the balance is less than this amount, no refuel will be made

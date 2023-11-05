@@ -903,7 +903,7 @@ class Refuel:
         self.module_str = f'{self.number} {self.manager.address} | zerius_refuel : {self.from_chain} => {self.to_chain}'
 
         if self.get_layerzero_fee:
-            self.check_refuel_fees()
+            await self.check_refuel_fees()
    
     async def main(self, retry=0):
         try:
@@ -959,29 +959,26 @@ class Refuel:
     async def get_min_dst_gas_lookup(self, dstChainId, funcType):
         return await self.contract.functions.minDstGasLookup(dstChainId, funcType).call()
     
-    def check_refuel_fees(self):
-
-        wallet = '0x7d4569a93937224bc4d6b679f25b899591efcccb' # рандомный кошелек
-
+    async def get_adapterParams(self, amount: int):
+        minDstGas = await self.get_min_dst_gas_lookup(LAYERZERO_CHAINS_ID[self.to_chain], 0)        
+        addressOnDist = Account().from_key(self.key).address
+        return encode_packed(
+            ["uint16", "uint256", "uint256", "address"],
+            [2, minDstGas, amount, addressOnDist] 
+        )
+    
+    async def check_refuel_fees(self):
         result = {}
-
-        for from_chain in REFUEL_CONTRACTS.items():
-            from_chain = from_chain[0]
-
+        for from_chain in REFUEL_CONTRACTS:
             result.update({from_chain:{}})
+            adapterParams = await self.get_adapterParams(1)
 
-            web3 = Web3(Web3.HTTPProvider(DATA[from_chain]['rpc']))
-
-            contract = web3.eth.contract(address=Web3.to_checksum_address(REFUEL_CONTRACTS[from_chain]), abi=REFUEL_ABI)
-            adapterParams = self.get_adapterParams(250000, 1) + wallet[2:].lower()
-
-            for to_chain in LAYERZERO_CHAINS_ID.items():
-                to_chain = to_chain[0]
-
+            for to_chain in LAYERZERO_CHAINS_ID:
                 if from_chain != to_chain:
-
                     try:
-                        send_value = contract.functions.estimateGasBridgeFee(LAYERZERO_CHAINS_ID[to_chain], False, adapterParams).call()
+                        dst_contract_address = encode_packed(["address"], [REFUEL_CONTRACTS[to_chain]])
+                        send_value = await self.contract.functions.estimateSendFee(LAYERZERO_CHAINS_ID[to_chain], dst_contract_address, adapterParams).call()
+                        
                         send_value = decimalToInt(send_value[0], 18)
                         send_value = round_to(send_value * PRICES_NATIVE[from_chain])
                         cprint(f'{from_chain} => {to_chain} : {send_value}', 'white')
@@ -994,14 +991,6 @@ class Refuel:
         call_json(result, path)
         cprint(f'\nРезультаты записаны в {path}.json\n', 'blue')
         sys.exit()
-        
-    async def get_adapterParams(self, amount: int):
-        minDstGas = await self.get_min_dst_gas_lookup(LAYERZERO_CHAINS_ID[self.to_chain], 0)        
-        addressOnDist = Account().from_key(self.key).address
-        return encode_packed(
-            ["uint16", "uint256", "uint256", "address"],
-            [2, minDstGas, amount, addressOnDist] 
-        )
     
     async def run(self):
         await self.setup()

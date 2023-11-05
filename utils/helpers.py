@@ -71,7 +71,7 @@ def intToDecimal(qty, decimal):
     return int(qty * 10**decimal)
 
 def decimalToInt(qty, decimal):
-    return int(qty / 10**decimal)
+    return float(qty / 10**decimal)
 
 async def fetch_price(session, symbol):
     url = f'https://min-api.cryptocompare.com/data/price?fsym={symbol}&tsyms=USDT'

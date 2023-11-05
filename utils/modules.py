@@ -900,7 +900,6 @@ class Refuel:
         self.token_data = await self.manager.get_token_info('')
         self.value = intToDecimal(self.amount, 18)
         self.adapterParams = await self.get_adapterParams(self.value)
-        print(self.adapterParams.hex())
         self.module_str = f'{self.number} {self.manager.address} | zerius_refuel : {self.from_chain} => {self.to_chain}'
 
         if self.get_layerzero_fee:

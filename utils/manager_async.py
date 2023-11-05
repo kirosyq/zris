@@ -74,8 +74,6 @@ class Web3ManagerAsync:
 
         gas = int(contract_txn['gas'] * contract_txn['gasPrice'])
         gas = decimalToInt(gas, 18) * PRICES_NATIVE[self.chain]
-
-        # cprint(f'total_gas : {round_to(gas)} $', 'blue')
         logger.info(f'total_gas : {round_to(gas)} $')
 
         if gas > MAX_GAS_CHARGE[self.chain]:

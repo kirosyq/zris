@@ -2,12 +2,32 @@ from pathlib import Path
 import asyncio
 from utils.helpers import get_chain_prices
 from utils.files import read_txt, load_json
+import json
 
+def read_json(filepath: Path | str):
+    with open(filepath) as file:
+        return json.load(file)
+    
+
+def read_txt(filepath: Path | str):
+    with open(filepath, "r") as file:
+        return [row.strip() for row in file]
+    
 max_time_check_tx_status = 100
 WALLETS = read_txt("wallets.txt")
 PROXIES = read_txt("proxies.txt")
 
+STARKNET_KEYS = read_txt("starknet_keys.txt")
+STARKNET_ADDRESSES = read_txt("starknet_addresses.txt")
+STARKNET_MAX_MINT_GAS = 500000000000000
+STARKNET_MAX_APPROVE_GAS = 300000000000000
+STARKNET_RPC = "https://g.w.lavanet.xyz:443/gateway/strk/rpc-http/f7ee0000000000000000000000000000"
+STARKNET_SCANNER = "https://voyager.online/tx"
+STARKNET_ETH_ABI = read_json("starknet_eth_abi.json")
+STARKNET_ETH_ADDRESS = "0x049D36570D4e46f48e99674bd3fcc84644DdD6b96F7C741B1562B82f9e004dC7"
+
 contracts = {
+    'starknet': '0x043ba5e69eec55ce374e1ce446d16ee4223c1ba48c808d2dcd4e606f94ec9e15',
     'ethereum': '0x178608fFe2Cca5d36f3Fc6e69426c4D3A5A74A41', 
     'optimism': '0x178608fFe2Cca5d36f3Fc6e69426c4D3A5A74A41', 
     'bsc': '0x250c34D06857b9C0A036d44F86d2c1Abe514B3Da', 

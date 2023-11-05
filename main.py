@@ -16,9 +16,10 @@ MODULE:
 3.  mint
 4.  bridge
 5.  check nfts
-6.  refuel                       
+6.  refuel
+7.  starknet mint
 
-Выберите модуль (1 - 6) : '''))
+Выберите модуль (1 - 7) : '''))
 
     asyncio.run(main(MODULE))
 

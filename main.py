@@ -16,8 +16,9 @@ MODULE:
 3.  mint
 4.  bridge
 5.  check nfts
+6.  refuel                       
 
-Выберите модуль (1 - 5) : '''))
+Выберите модуль (1 - 6) : '''))
 
     asyncio.run(main(MODULE))
 

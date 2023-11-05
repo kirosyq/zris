@@ -1,6 +1,6 @@
 from data import DATA
-from config import ABI, contracts, STR_DONE, STR_CANCEL, WALLETS, LAYERZERO_CHAINS_ID, ZERO_ADDRESS, EXCLUDED_LZ_PAIRS, ZERIUS_MINT_GAS_LIMIT, ZERIUS_SEND_GAS_LIMIT, COINGECKO_URL, LZ_CHAIN_TO_TOKEN, PROXIES
-from setting import ValueMintBridge, ValueMint, ValueBridge, ValueUltra, RETRY, WALLETS_IN_BATCH, CHECK_GWEI, TG_BOT_SEND, IS_SLEEP, DELAY_SLEEP, MAX_GWEI, RANDOMIZER, MAX_WAITING_NFT, USE_PROXY
+from config import ABI, contracts, STR_DONE, STR_CANCEL, WALLETS, LAYERZERO_CHAINS_ID, ZERO_ADDRESS, EXCLUDED_LZ_PAIRS, ZERIUS_MINT_GAS_LIMIT, ZERIUS_SEND_GAS_LIMIT, COINGECKO_URL, LZ_CHAIN_TO_TOKEN, PROXIES, REFUEL_MAX_CAPS, REFUEL_ABI, REFUEL_CONTRACTS, PRICES_NATIVE
+from setting import ValueMintBridge, ValueMint, ValueBridge, ValueUltra, ValueRefuel, RETRY, WALLETS_IN_BATCH, CHECK_GWEI, TG_BOT_SEND, IS_SLEEP, DELAY_SLEEP, MAX_GWEI, RANDOMIZER, MAX_WAITING_NFT, USE_PROXY
 
 import time
 from loguru import logger
@@ -12,12 +12,16 @@ import asyncio
 from eth_account import Account
 from decimal import *
 from eth_abi.packed import encode_packed
+from eth_abi import encode
 from termcolor import cprint
 import csv
 from tabulate import tabulate
 
 from .manager import Web3Manager
-from .helpers import list_send, send_msg, round_to, wait_gas, is_private_key, async_sleeping
+from .manager_async import Web3ManagerAsync
+from .helpers import list_send, send_msg, round_to, wait_gas, is_private_key, async_sleeping, intToDecimal, decimalToInt
+from .files import call_json
+import sys
 
 async def get_contract(chain):
     web3 = Web3(AsyncHTTPProvider(DATA[chain]['rpc']), modules={"eth": (AsyncEth)}, middlewares=[])
@@ -62,11 +66,13 @@ class Mint:
             return False
 
 class Bridge:
-    def __init__(self, key, number, from_chain, to_chain, token_id, manager, module_str, contract) -> None:
+    def __init__(self, key, number, from_chain, to_chain, refuel_from_amount, refuel_to_amount, token_id, manager, module_str, contract) -> None:
         self.key = key
         self.number = number
         self.from_chain = from_chain
         self.to_chain = to_chain
+        self.refuel_from_amount = refuel_from_amount
+        self.refuel_to_amount = refuel_to_amount
         self.token_id = token_id
         self.manager = manager
         self.module_str = module_str
@@ -93,10 +99,20 @@ class Bridge:
 
     async def get_txn(self):
         try:
-            adapterParams = encode_packed(
-                ["uint16", "uint256"],
-                [1, await self.get_min_dst_gas_lookup(LAYERZERO_CHAINS_ID[self.to_chain], 1)] # lzVersion, gasLimit - extra for minting
-            )
+            if (self.refuel_to_amount > 0):
+                refuel_amount = int(random.uniform(self.refuel_from_amount, self.refuel_to_amount) * 10**18)
+
+                minDstGas = await self.get_min_dst_gas_lookup(LAYERZERO_CHAINS_ID[self.to_chain], 1)
+                addressOnDist = self.manager.web3.eth.account.from_key(self.manager.key).address
+                adapterParams = encode_packed(
+                    ["uint16", "uint256", "uint256", "address"],
+                    [2, minDstGas, refuel_amount, addressOnDist] # lzVersion, gasLimit - extra for minting
+                )
+            else:
+                adapterParams = encode_packed(
+                    ["uint16", "uint256"],
+                    [1, await self.get_min_dst_gas_lookup(LAYERZERO_CHAINS_ID[self.to_chain], 1)] # lzVersion, gasLimit - extra for minting
+                )
 
             nativeFee, _ = await self.estimateSendFee(
                 LAYERZERO_CHAINS_ID[self.to_chain],
@@ -156,6 +172,8 @@ class Bridger:
         self.key = key
         self.from_chain = random.choice(ValueBridge.from_chain)
         self.to_chain = random.choice(ValueBridge.to_chain)
+        self.refuel_from_amount = ValueBridge.refuel_amount_from
+        self.refuel_to_amount = ValueBridge.refuel_amount_to
         self.manager = Web3Manager(self.key, self.from_chain)
         self.module_str = f'{self.number} {self.manager.address} | bridge nft {self.from_chain} => {self.to_chain}'
 
@@ -182,7 +200,7 @@ class Bridger:
         for i in range(counts):
             token_id = tokens_id[i]
 
-            function = Bridge(self.key, self.number, self.from_chain, self.to_chain, token_id, self.manager, self.module_str, self.contract)
+            function = Bridge(self.key, self.number, self.from_chain, self.to_chain, self.refuel_from_amount, self.refuel_to_amount, token_id, self.manager, self.module_str, self.contract)
             contract_txn = await function.get_txn()
             if not contract_txn:
                 logger.error(f'{self.module_str} | error getting contract_txn')
@@ -248,6 +266,8 @@ class MintBridge:
         self.to_chain = random.choice(ValueMintBridge.to_chain)
         self.maxPrice = ValueMintBridge.max_price
         self.amount = random.randint(*ValueMintBridge.amount)
+        self.refuel_from_amount = ValueMintBridge.refuel_amount_from
+        self.refuel_to_amount = ValueMintBridge.refuel_amount_to
         self.web3Manager = Web3Manager(key, self.from_chain)
         self.module_str = f'{self.number} {self.web3Manager.address} | mint&bridge | {self.from_chain} => {self.to_chain}'
 
@@ -372,7 +392,7 @@ class MintBridge:
         tokenId = await self.get_first_token_id_on_chain(address)
         logger.info(f'{self.module_str} | start bridge token {tokenId} | {self.from_chain} => {self.to_chain}')
 
-        function = Bridge(self.key, self.number, self.from_chain, self.to_chain, tokenId, self.web3Manager, self.module_str, self.contract)
+        function = Bridge(self.key, self.number, self.from_chain, self.to_chain, self.refuel_from_amount, self.refuel_to_amount, tokenId, self.web3Manager, self.module_str, self.contract)
 
         retryBridge = 0
         status = 0
@@ -422,6 +442,8 @@ class Ultra:
             self.chains.append(self.fromChain)
         self.manager = Web3Manager(self.key, "ethereum")
         self.module_str = f'{self.number} {self.manager.address} | ultra'
+        self.refuel_to_amount = ValueUltra.refuel_amount_to
+        self.refuel_to_amount = ValueUltra.refuel_amount_from
         self.bridgeMatrix = None
 
     def get_address(self, key):
@@ -576,7 +598,7 @@ class Ultra:
     def get_chain_name_for_lz_id(self, lzId):
         return list(LAYERZERO_CHAINS_ID.keys())[list(LAYERZERO_CHAINS_ID.values()).index(lzId)]
     
-    async def get_first_token_id_on_chain(self, address, contract) -> int | None:
+    async def get_first_token_id_on_chain(self, address, contract) -> int:
         balance = await self.get_nft_balance_in_chain(address, contract)
         if balance == 0:
             return None
@@ -653,7 +675,7 @@ class Ultra:
         tokenId = await self.get_first_token_id_on_chain(address, contracts[srcLzChain])
         logger.info(f'{self.module_str} | start bridge token {tokenId} | {srcChainName} => {dstChainName}')
 
-        function = Bridge(self.key, self.number, srcChainName, dstChainName, tokenId, web3Managers[srcLzChain], self.module_str, contracts[srcLzChain])
+        function = Bridge(self.key, self.number, srcChainName, dstChainName, self.refuel_from_amount, self.refuel_to_amount, tokenId, web3Managers[srcLzChain], self.module_str, contracts[srcLzChain])
 
         retryBridge = 0
         status = 0
@@ -855,12 +877,144 @@ class CheckNFTs:
 
         self.send_result(result_balances, total_balances)
 
+class Refuel:
+    def __init__(self, number, key):
+        self.from_chain = ValueRefuel.from_chain
+        self.to_chain = ValueRefuel.to_chain
+        self.amount_from = ValueRefuel.amount_from
+        self.amount_to = ValueRefuel.amount_to
+        self.swap_all_balance = ValueRefuel.swap_all_balance
+        self.min_amount_swap = ValueRefuel.min_amount_swap
+        self.keep_value_from = ValueRefuel.keep_value_from
+        self.keep_value_to = ValueRefuel.keep_value_to
+        self.get_layerzero_fee = ValueRefuel.get_layerzero_fee
+        self.key = key
+        self.number = number
+    
+    async def setup(self):
+        self.from_chain = random.choice(self.from_chain)
+        self.to_chain = random.choice(self.to_chain)
+        self.manager = Web3ManagerAsync(self.key, self.from_chain)
+        self.contract = self.manager.web3.eth.contract(address=Web3.to_checksum_address(REFUEL_CONTRACTS[self.from_chain]), abi=REFUEL_ABI)
+        self.amount = await self.manager.get_amount_in(self.keep_value_from, self.keep_value_to, self.swap_all_balance, LZ_CHAIN_TO_TOKEN[LAYERZERO_CHAINS_ID[self.from_chain]], self.amount_from, self.amount_to)
+        self.token_data = await self.manager.get_token_info('')
+        self.value = intToDecimal(self.amount, 18)
+        self.adapterParams = await self.get_adapterParams(self.value)
+        print(self.adapterParams.hex())
+        self.module_str = f'{self.number} {self.manager.address} | zerius_refuel : {self.from_chain} => {self.to_chain}'
+
+        if self.get_layerzero_fee:
+            self.check_refuel_fees()
+   
+    async def main(self, retry=0):
+        try:
+            dst_contract_address = encode_packed(["address"], [REFUEL_CONTRACTS[self.to_chain]])
+            send_value = await self.contract.functions.estimateSendFee(LAYERZERO_CHAINS_ID[self.to_chain], dst_contract_address, self.adapterParams).call()
+
+            contract_txn = await self.contract.functions.refuel(
+                    LAYERZERO_CHAINS_ID[self.to_chain],
+                    dst_contract_address,
+                    self.adapterParams,
+                ).build_transaction(
+                {
+                    "from": self.manager.address,
+                    "value": send_value[0],
+                    "nonce": await self.manager.web3.eth.get_transaction_count(self.manager.address),
+                    'gasPrice': 0,
+                    'gas': 0,
+                }
+            )
+
+            contract_txn = await self.manager.add_gas_price(contract_txn)
+            contract_txn = await self.manager.add_gas_limit_layerzero(contract_txn)
+
+            if self.manager.get_total_fee(contract_txn) == False: return False
+
+            if self.swap_all_balance:
+                gas_gas = int(contract_txn['gas'] * contract_txn['gasPrice'])
+                contract_txn['value'] = contract_txn['value'] - gas_gas
+
+            if self.amount >= self.min_amount_swap:
+                status, tx_link = await self.manager.send_tx(contract_txn)
+                if status == 1:
+                    logger.success(f'{self.module_str} | {tx_link}')
+                    list_send.append(f'{STR_DONE}{self.module_str}')
+                else:
+                    logger.error(f'{self.number} {self.manager.address} | tx is failed | {tx_link}')
+                    if retry < RETRY:
+                        logger.info(f'try again in 10 sec.')
+                        await asyncio.sleep(10)
+                        return await self.main(retry+1)
+                    else:
+                        list_send.append(f'{STR_CANCEL}{self.module_str}')
+            else:
+                logger.error(f"{self.module_str} | {self.amount} (amount) < {self.min_amount_swap} (min_amount_swap)")
+                list_send.append(f'{STR_CANCEL}{self.module_str} | {round_to(self.amount)} less {self.min_amount_swap}')
+                return False
+            
+        except Exception as error:
+            logger.error(error)
+            list_send.append(f'{STR_CANCEL}{self.module_str} | {error}')
+            return False
+        
+    async def get_min_dst_gas_lookup(self, dstChainId, funcType):
+        return await self.contract.functions.minDstGasLookup(dstChainId, funcType).call()
+    
+    def check_refuel_fees(self):
+
+        wallet = '0x7d4569a93937224bc4d6b679f25b899591efcccb' # рандомный кошелек
+
+        result = {}
+
+        for from_chain in REFUEL_CONTRACTS.items():
+            from_chain = from_chain[0]
+
+            result.update({from_chain:{}})
+
+            web3 = Web3(Web3.HTTPProvider(DATA[from_chain]['rpc']))
+
+            contract = web3.eth.contract(address=Web3.to_checksum_address(REFUEL_CONTRACTS[from_chain]), abi=REFUEL_ABI)
+            adapterParams = self.get_adapterParams(250000, 1) + wallet[2:].lower()
+
+            for to_chain in LAYERZERO_CHAINS_ID.items():
+                to_chain = to_chain[0]
+
+                if from_chain != to_chain:
+
+                    try:
+                        send_value = contract.functions.estimateGasBridgeFee(LAYERZERO_CHAINS_ID[to_chain], False, adapterParams).call()
+                        send_value = decimalToInt(send_value[0], 18)
+                        send_value = round_to(send_value * PRICES_NATIVE[from_chain])
+                        cprint(f'{from_chain} => {to_chain} : {send_value}', 'white')
+                        result[from_chain].update({to_chain:send_value})
+                    except Exception as error:
+                        cprint(f'{from_chain} => {to_chain} : None', 'white')
+                        result[from_chain].update({to_chain:None})
+
+        path = 'results/zerius_refuel'
+        call_json(result, path)
+        cprint(f'\nРезультаты записаны в {path}.json\n', 'blue')
+        sys.exit()
+        
+    async def get_adapterParams(self, amount: int):
+        minDstGas = await self.get_min_dst_gas_lookup(LAYERZERO_CHAINS_ID[self.to_chain], 0)        
+        addressOnDist = Account().from_key(self.key).address
+        return encode_packed(
+            ["uint16", "uint256", "uint256", "address"],
+            [2, minDstGas, amount, addressOnDist] 
+        )
+    
+    async def run(self):
+        await self.setup()
+        await self.main()
+
 MODULES = {
     1: ("ultra", Ultra),
     2: ("mint_bridge", MintBridge),
     3: ("mint", Minter),
     4: ("bridge", Bridger),
     5: ("check_nfts", CheckNFTs),
+    6: ("refuel", Refuel),
 }
 
 def get_module(module):

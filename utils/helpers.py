@@ -9,6 +9,7 @@ import asyncio
 from eth_account import Account
 import telebot
 import math
+import asyncio, aiohttp
 from tqdm import tqdm
 
 
@@ -71,3 +72,60 @@ def intToDecimal(qty, decimal):
 
 def decimalToInt(qty, decimal):
     return int(qty / 10**decimal)
+
+async def fetch_price(session, symbol):
+    url = f'https://min-api.cryptocompare.com/data/price?fsym={symbol}&tsyms=USDT'
+
+    try:
+        async with session.get(url, timeout=10) as resp:
+            if resp.status == 200:
+                resp_json = await resp.json(content_type=None)
+                return float(resp_json.get('USDT', 0))
+            else:
+                await asyncio.sleep(1)
+                return await fetch_price(session, symbol)
+    except Exception as error:
+        await asyncio.sleep(1)
+        return await fetch_price(session, symbol)
+    
+def sleeping(from_sleep, to_sleep):
+    x = random.randint(from_sleep, to_sleep)
+    for i in tqdm(range(x), desc='sleep ', bar_format='{desc}: {n_fmt}/{total_fmt}'):
+        time.sleep(1)
+    
+async def get_chain_prices():
+    chains = {
+        'avalanche': 'AVAX',
+        'polygon': 'MATIC',
+        'ethereum': 'ETH',
+        'bsc': 'BNB',
+        'arbitrum': 'ETH',
+        'optimism': 'ETH',
+        'fantom': 'FTM',
+        'zksync': 'ETH',
+        'nova': 'ETH',
+        'gnosis': 'xDAI',
+        'celo': 'CELO',
+        'polygon_zkevm': 'ETH',
+        'core': 'COREDAO',
+        'harmony': 'ONE',
+        'moonbeam': 'GLMR',
+        'moonriver': 'MOVR',
+        'linea': 'ETH',
+        'base': 'ETH',
+        'scroll': 'ETH',
+        'zora': 'ETH'
+    }
+
+    prices = {chain: 0 for chain in chains.keys()}
+
+    async with aiohttp.ClientSession() as session:
+        tasks = [fetch_price(session, symbol) for symbol in chains.values()]
+        fetched_prices = await asyncio.gather(*tasks)
+
+        for chain, price in zip(chains.keys(), fetched_prices):
+            prices[chain] = price
+            if price == 0:
+                logger.error(f'Failed to fetch price for {chain}. Setting price to 0.')
+
+    return prices

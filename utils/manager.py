@@ -1,4 +1,4 @@
-from data import DATA
+from data.data import DATA
 from setting import USE_PROXY
 from config import max_time_check_tx_status, PROXIES
 import time

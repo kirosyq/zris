@@ -1,6 +1,8 @@
-data.py
-proxies.txt
-wallets.txt
+data/data.py
+data/proxies.txt
+data/wallets.txt
+data/starknet_keys.txt
+data/starknet_addresses.txt
 results/balances.csv
 
 # Byte-compiled / optimized / DLL files

@@ -1,6 +1,12 @@
-from data import DATA
-from config import ABI, contracts, STR_DONE, STR_CANCEL, WALLETS, LAYERZERO_CHAINS_ID, ZERO_ADDRESS, EXCLUDED_LZ_PAIRS, ZERIUS_MINT_GAS_LIMIT, ZERIUS_SEND_GAS_LIMIT, COINGECKO_URL, LZ_CHAIN_TO_TOKEN, PROXIES, REFUEL_MAX_CAPS, REFUEL_ABI, REFUEL_CONTRACTS, PRICES_NATIVE, STARKNET_KEYS, STARKNET_ADDRESSES, STARKNET_MAX_MINT_GAS, STARKNET_RPC, STARKNET_SCANNER, STARKNET_ETH_ABI, STARKNET_ETH_ADDRESS, STARKNET_MAX_APPROVE_GAS
-from setting import ValueMintBridge, ValueMint, ValueBridge, ValueUltra, ValueRefuel, ValueStarknetMint, RETRY, WALLETS_IN_BATCH, CHECK_GWEI, TG_BOT_SEND, IS_SLEEP, DELAY_SLEEP, MAX_GWEI, RANDOMIZER, MAX_WAITING_NFT, USE_PROXY
+from data.data import DATA
+from config import ABI, contracts, STR_DONE, \
+    STR_CANCEL, WALLETS, LAYERZERO_CHAINS_ID, ZERO_ADDRESS, \
+    EXCLUDED_LZ_PAIRS, ZERIUS_MINT_GAS_LIMIT, ZERIUS_SEND_GAS_LIMIT, \
+    COINGECKO_URL, LZ_CHAIN_TO_TOKEN, PROXIES, \
+    REFUEL_ABI, REFUEL_CONTRACTS, PRICES_NATIVE, \
+    STARKNET_KEYS, STARKNET_ADDRESSES, STARKNET_MAX_MINT_GAS, STARKNET_RPC, STARKNET_SCANNER, STARKNET_ETH_ABI, STARKNET_ETH_ADDRESS, STARKNET_MAX_APPROVE_GAS
+
+from setting import ValueMintBridge, ValueMint, ValueBridge, ValueUltra, ValueRefuel, ValueStarknetMint, RETRY, WALLETS_IN_BATCH, CHECK_GWEI, TG_BOT_SEND, IS_SLEEP, DELAY_SLEEP, RANDOMIZER, MAX_WAITING_NFT, USE_PROXY
 
 import time
 from loguru import logger
@@ -9,10 +15,9 @@ from web3.eth import AsyncEth
 import random
 import requests
 import asyncio
-from eth_account import Account
+from eth_account import Account as AccountEVM
 from decimal import *
 from eth_abi.packed import encode_packed
-from eth_abi import encode
 from termcolor import cprint
 import csv
 from tabulate import tabulate
@@ -44,6 +49,7 @@ class StarknetWalletDTO:
     def __init__(self, key: str, address: str):
         self.key = key
         self.address = address
+
 class StarknetMint:
     STARKNET = 'starknet'
 
@@ -391,7 +397,7 @@ class MintBridge:
     
     def get_address(self, key):
         try:
-            return Account().from_key(key).address
+            return AccountEVM().from_key(key).address
         except:
             return None
         
@@ -555,7 +561,7 @@ class Ultra:
 
     def get_address(self, key):
         try:
-            return Account().from_key(key).address
+            return AccountEVM().from_key(key).address
         except:
             return None
         
@@ -930,7 +936,7 @@ class CheckNFTs:
 
     def get_address(self, key):
         try:
-            return Account().from_key(key).address
+            return AccountEVM().from_key(key).address
         except:
             return key
         
@@ -1068,7 +1074,7 @@ class Refuel:
     
     async def get_adapterParams(self, amount: int):
         minDstGas = await self.get_min_dst_gas_lookup(LAYERZERO_CHAINS_ID[self.to_chain], 0)        
-        addressOnDist = Account().from_key(self.key).address
+        addressOnDist = AccountEVM().from_key(self.key).address
         return encode_packed(
             ["uint16", "uint256", "uint256", "address"],
             [2, minDstGas, amount, addressOnDist] 

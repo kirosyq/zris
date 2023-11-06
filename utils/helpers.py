@@ -1,4 +1,4 @@
-from data import DATA, TG_TOKEN, TG_ID
+from data.data import DATA, TG_TOKEN, TG_ID
 from setting import MAX_GWEI
 
 import time

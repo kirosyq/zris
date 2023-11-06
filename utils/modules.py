@@ -4,7 +4,7 @@ from config import ABI, contracts, STR_DONE, \
     EXCLUDED_LZ_PAIRS, ZERIUS_MINT_GAS_LIMIT, ZERIUS_SEND_GAS_LIMIT, \
     COINGECKO_URL, LZ_CHAIN_TO_TOKEN, PROXIES, \
     REFUEL_ABI, REFUEL_CONTRACTS, PRICES_NATIVE, \
-    STARKNET_KEYS, STARKNET_ADDRESSES, STARKNET_MAX_MINT_GAS, STARKNET_RPC, STARKNET_SCANNER, STARKNET_ETH_ABI, STARKNET_ETH_ADDRESS, STARKNET_MAX_APPROVE_GAS
+    STARKNET_KEYS, STARKNET_ADDRESSES, STARKNET_MAX_MINT_GAS, STARKNET_RPC, STARKNET_SCANNER, STARKNET_ETH_ABI, STARKNET_ETH_ADDRESS, STARKNET_MAX_APPROVE_GAS, STARKNET_ADDRESS
 
 from setting import ValueMintBridge, ValueMint, ValueBridge, ValueUltra, ValueRefuel, ValueStarknetMint, RETRY, WALLETS_IN_BATCH, CHECK_GWEI, TG_BOT_SEND, IS_SLEEP, DELAY_SLEEP, RANDOMIZER, MAX_WAITING_NFT, USE_PROXY
 
@@ -51,13 +51,12 @@ class StarknetWalletDTO:
         self.address = address
 
 class StarknetMint:
-    STARKNET = 'starknet'
 
     def __init__(self, number, wallet: StarknetWalletDTO):
         self.wallet = wallet
         self.number = number
         self.amount_to_mint = random.randint(*ValueStarknetMint.amount_mint)
-        self.module_str = f'{self.number} {self.wallet.address} | mint nft ({self.STARKNET})'
+        self.module_str = f'{self.number} {self.wallet.address} | mint nft (starknet)'
 
     def _accountFromKey(self, key: str, address: str) -> Account:
         client = FullNodeClient(node_url=STARKNET_RPC)
@@ -72,7 +71,7 @@ class StarknetMint:
     
     async def _starknetContract(self, account: Account):
         contract = await Contract.from_address(
-            address=contracts[self.STARKNET],
+            address=STARKNET_ADDRESS,
             provider=account,
         )
         return contract
@@ -92,14 +91,14 @@ class StarknetMint:
             abi=STARKNET_ETH_ABI,
             provider=account,
         )
-        allowance = await eth.functions['allowance'].call(int(self.wallet.address, 0), int(contracts[self.STARKNET], 0))
+        allowance = await eth.functions['allowance'].call(int(self.wallet.address, 0), int(STARKNET_ADDRESS, 0))
         allowance = allowance.as_tuple()
         if allowance[0] >= amountLow: return
         tx_hash = await self._invoke(
             eth, 
             'approve', 
             (
-                int(contracts[self.STARKNET], 0), 
+                int(STARKNET_ADDRESS, 0), 
                 {'low': amountLow, 'high': amountHigh}
             ), 
             STARKNET_MAX_APPROVE_GAS
@@ -212,10 +211,10 @@ class Bridge:
 
     async def get_txn(self):
         try:
+            minDstGas = await self.get_min_dst_gas_lookup(LAYERZERO_CHAINS_ID[self.to_chain], 1)
             if (self.refuel_to_amount > 0):
                 refuel_amount = int(random.uniform(self.refuel_from_amount, self.refuel_to_amount) * 10**18)
-
-                minDstGas = await self.get_min_dst_gas_lookup(LAYERZERO_CHAINS_ID[self.to_chain], 1)
+                
                 addressOnDist = self.manager.web3.eth.account.from_key(self.manager.key).address
                 adapterParams = encode_packed(
                     ["uint16", "uint256", "uint256", "address"],
@@ -224,7 +223,7 @@ class Bridge:
             else:
                 adapterParams = encode_packed(
                     ["uint16", "uint256"],
-                    [1, await self.get_min_dst_gas_lookup(LAYERZERO_CHAINS_ID[self.to_chain], 1)] # lzVersion, gasLimit - extra for minting
+                    [1, minDstGas] # lzVersion, gasLimit - extra for minting
                 )
 
             nativeFee, _ = await self.estimateSendFee(

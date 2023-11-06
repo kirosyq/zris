@@ -8,6 +8,8 @@ zerius_aio is a script that enables comprehensive interaction with https://zeriu
 3. **mint** - Mints NFTs in the selected network.
 4. **bridge** - Bridges NFTs from one network to another selected network.
 5. **checker** - Observes the quantity of NFTs in the wallets across various networks.
+6. **refuel** - Transfers gas from one network to another via LayerZero.
+7 **starknet mint nft** - Mints NFTs in Starknet.
 
 ## Algorithm of the 'ultra' module:
 1. Compiles a list of all networks where there is a native token (>= $1) for bridging.
@@ -21,9 +23,14 @@ zerius_aio is a script that enables comprehensive interaction with https://zeriu
 ## Setup
 
 1. All configurations are handled within the `settings.py` file, with descriptions provided therein.
-2. Rename `wallets_EXAMPLE.txt` to `wallets.txt` and `data_EXAMPLE.py` to `data.py`.
+2. Rename `wallets_EXAMPLE.txt` to `wallets.txt`, `data_EXAMPLE.py` to `data.py`, `proxies_EXAMPLE.txt` to `proxies.txt`, `starknet_keys_EXAMPLE.txt` to `starknet_keys.txt`, `starknet_addresses_EXAMPLE.txt` to `starknet_addresses.txt`.
 3. In `wallets.txt`, enter the private keys for the wallets, each on a new line.
 4. Execute the `main.py` file to run the script.
+
+### Starknet Mint NFTs
+If you want to use **starknet mint nft** module:
+1. Enter the private keys for Argent/Braavos wallets into starknet_wallets.txt, each on a new line.
+2. Enter the wallet addresses into starknet_addresses.txt in the same order as the private keys.
 
 ## Dependency Installation
 
@@ -35,11 +42,13 @@ Install the necessary libraries using pip: `pip install -r requirements.txt`
 zerius_aio - это скрипт, который умеет делать все в https://zerius.io/. Почитать подробнее о проекте здесь : https://t.me/hodlmodeth/338
 
 ## Модули : 
-1. Ultra - ищет самые дешевые сети, в которых у тебя баланс нативки >= 1$, ищет нфт и бриджит в другие самые дешевые сети. если нфт в кошельке нет, сминтит и затем начнет бриджить. сколько раз бриджить - настраиваемое число. например, если ты указал бриджить 2 раза, то он (это пример) сделает так : mint nft (base), bridge base => arbitrum => zksync.
-2. Mint + Bridge - минт + бридж нфт из выбранной сети в другую выбранную сеть.
-3. Mint - минт нфт в выбранной сети.
-4. Bridge - бридж нфт из одной сети в другую выбранную сеть.
-5. Checker - смотрит в каких сетях сколько нфт есть на кошельках.
+1. **ultra** - ищет самые дешевые сети, в которых у тебя баланс нативки >= 1$, ищет нфт и бриджит в другие самые дешевые сети. если нфт в кошельке нет, сминтит и затем начнет бриджить. сколько раз бриджить - настраиваемое число. например, если ты указал бриджить 2 раза, то он (это пример) сделает так : mint nft (base), bridge base => arbitrum => zksync.
+2. **mint + bridge** - минт + бридж нфт из выбранной сети в другую выбранную сеть.
+3. **mint** - минт нфт в выбранной сети.
+4. **bridge** - бридж нфт из одной сети в другую выбранную сеть.
+5. **checker** - смотрит в каких сетях сколько нфт есть на кошельках.
+6. **refuel** - отправка газа с одной сети в другую через layerzero.
+7. **starknet mint nft** - минт нфт в starknet.
 
 ## Алгоритм ultra модуля :
 1. Формирование списка всех сетей, где есть нативный токен (>= 1$) для бриджа
@@ -53,7 +62,7 @@ zerius_aio - это скрипт, который умеет делать все 
 ## Настройка.
 
 1. Вся настройка делается в файле `setting.py`, описание там же. 
-2. Переименуй файлы `wallets_EXAMPLE.txt` => `wallets.txt`, `data_EXAMPLE.py` => `data.py`.
+2. Переименуй файлы `wallets_EXAMPLE.txt` => `wallets.txt`, `data_EXAMPLE.py` => `data.py`, `proxies_EXAMPLE.txt` => `proxies.txt`, `starknet_keys_EXAMPLE.txt` => `starknet_keys.txt`, `starknet_addresses_EXAMPLE.txt` => `starknet_addresses.txt`.
 3. В `wallets.txt` записывай приватники от кошельков с новой строки.
 4. Запускать нужно файл `main.py`.
 

@@ -906,7 +906,7 @@ class Ultra:
             
             # logger.info(f'{self.module_str} | building lowcost bridges matrix')
             lowcostBridgesMatrix = await self.get_lowcost_bridges(fromAddress, contracts, tokensPricesUsd, web3Managers)
-            if len(lowcostBridgesMatrix.keys()) < 2 and srcLzChain not in lowcostBridgesMatrix.keys():
+            if len(lowcostBridgesMatrix.keys()) < 2 or srcLzChain not in lowcostBridgesMatrix.keys():
                 logger.error(f'{self.module_str} | less than 2 chains are available, max bridge price is too low or insufficient balances')
                 list_send.append(f'{STR_CANCEL}{self.module_str}')
                 return

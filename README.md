@@ -23,7 +23,7 @@ zerius_aio is a script that enables comprehensive interaction with https://zeriu
 ## Setup
 
 1. All configurations are handled within the `settings.py` file, with descriptions provided therein.
-2. Rename `wallets_EXAMPLE.txt` to `wallets.txt`, `data_EXAMPLE.py` to `data.py`, `proxies_EXAMPLE.txt` to `proxies.txt`, `starknet_keys_EXAMPLE.txt` to `starknet_keys.txt`, `starknet_addresses_EXAMPLE.txt` to `starknet_addresses.txt`.
+2. In the data folder, rename `wallets_EXAMPLE.txt` to `wallets.txt`, `data_EXAMPLE.py` to `data.py`, `proxies_EXAMPLE.txt` to `proxies.txt`, `starknet_keys_EXAMPLE.txt` to `starknet_keys.txt`, `starknet_addresses_EXAMPLE.txt` to `starknet_addresses.txt`.
 3. In `wallets.txt`, enter the private keys for the wallets, each on a new line.
 4. Execute the `main.py` file to run the script.
 
@@ -62,7 +62,7 @@ zerius_aio - это скрипт, который умеет делать все 
 ## Настройка.
 
 1. Вся настройка делается в файле `setting.py`, описание там же. 
-2. Переименуй файлы `wallets_EXAMPLE.txt` => `wallets.txt`, `data_EXAMPLE.py` => `data.py`, `proxies_EXAMPLE.txt` => `proxies.txt`, `starknet_keys_EXAMPLE.txt` => `starknet_keys.txt`, `starknet_addresses_EXAMPLE.txt` => `starknet_addresses.txt`.
+2. В папке data переименуй файлы `wallets_EXAMPLE.txt` => `wallets.txt`, `data_EXAMPLE.py` => `data.py`, `proxies_EXAMPLE.txt` => `proxies.txt`, `starknet_keys_EXAMPLE.txt` => `starknet_keys.txt`, `starknet_addresses_EXAMPLE.txt` => `starknet_addresses.txt`.
 3. В `wallets.txt` записывай приватники от кошельков с новой строки.
 4. Запускать нужно файл `main.py`.
 

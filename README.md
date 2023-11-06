@@ -57,6 +57,11 @@ zerius_aio - это скрипт, который умеет делать все 
 3. В `wallets.txt` записывай приватники от кошельков с новой строки.
 4. Запускать нужно файл `main.py`.
 
+### Starknet mint
+Если хочешь использовать mint модуль для старкнета:
+1. Запиши в `starknet_wallets.txt` приватники от кошельков argent/braavos с новой строки.
+2. Запиши в `starknet_addresses.txt` адреса от кошельков в том же порядке, что и приватники.
+
 Устанавливаем библиотеки : `pip install -r requirements.txt`
 
 Creared by https://t.me/hodlmodeth & https://github.com/polypox 

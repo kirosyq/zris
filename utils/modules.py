@@ -1,6 +1,6 @@
 from data import DATA
-from config import ABI, contracts, STR_DONE, STR_CANCEL, WALLETS, LAYERZERO_CHAINS_ID, ZERO_ADDRESS, EXCLUDED_LZ_PAIRS, ZERIUS_MINT_GAS_LIMIT, ZERIUS_SEND_GAS_LIMIT, COINGECKO_URL, LZ_CHAIN_TO_TOKEN, PROXIES, REFUEL_MAX_CAPS, REFUEL_ABI, REFUEL_CONTRACTS, PRICES_NATIVE
-from setting import ValueMintBridge, ValueMint, ValueBridge, ValueUltra, ValueRefuel, RETRY, WALLETS_IN_BATCH, CHECK_GWEI, TG_BOT_SEND, IS_SLEEP, DELAY_SLEEP, MAX_GWEI, RANDOMIZER, MAX_WAITING_NFT, USE_PROXY
+from config import ABI, contracts, STR_DONE, STR_CANCEL, WALLETS, LAYERZERO_CHAINS_ID, ZERO_ADDRESS, EXCLUDED_LZ_PAIRS, ZERIUS_MINT_GAS_LIMIT, ZERIUS_SEND_GAS_LIMIT, COINGECKO_URL, LZ_CHAIN_TO_TOKEN, PROXIES, REFUEL_MAX_CAPS, REFUEL_ABI, REFUEL_CONTRACTS, PRICES_NATIVE, STARKNET_KEYS, STARKNET_ADDRESSES, STARKNET_MAX_MINT_GAS, STARKNET_RPC, STARKNET_SCANNER, STARKNET_ETH_ABI, STARKNET_ETH_ADDRESS, STARKNET_MAX_APPROVE_GAS
+from setting import ValueMintBridge, ValueMint, ValueBridge, ValueUltra, ValueRefuel, ValueStarknetMint, RETRY, WALLETS_IN_BATCH, CHECK_GWEI, TG_BOT_SEND, IS_SLEEP, DELAY_SLEEP, MAX_GWEI, RANDOMIZER, MAX_WAITING_NFT, USE_PROXY
 
 import time
 from loguru import logger
@@ -16,6 +16,13 @@ from eth_abi import encode
 from termcolor import cprint
 import csv
 from tabulate import tabulate
+from starknet_py.contract import Contract
+from starknet_py.net.account.account import Account
+from starknet_py.net.full_node_client import FullNodeClient
+from starknet_py.net.models.chains import StarknetChainId
+from starknet_py.net.signer.stark_curve_signer import KeyPair
+from starknet_py.cairo.felt import encode_shortstring
+
 
 from .manager import Web3Manager
 from .manager_async import Web3ManagerAsync
@@ -32,6 +39,106 @@ async def get_balance_nfts_amount(contract, owner):
 
 async def get_balance_nfts_id(contract, owner, i):
     return await contract.functions.tokenOfOwnerByIndex(Web3.to_checksum_address(owner), i).call()
+
+class StarknetWalletDTO:
+    def __init__(self, key: str, address: str):
+        self.key = key
+        self.address = address
+class StarknetMint:
+    STARKNET = 'starknet'
+
+    def __init__(self, number, wallet: StarknetWalletDTO):
+        self.wallet = wallet
+        self.number = number
+        self.amount_to_mint = random.randint(*ValueStarknetMint.amount_mint)
+        self.module_str = f'{self.number} {self.wallet.address} | mint nft ({self.STARKNET})'
+
+    def _accountFromKey(self, key: str, address: str) -> Account:
+        client = FullNodeClient(node_url=STARKNET_RPC)
+        key_pair = KeyPair.from_private_key(key=key)
+        account = Account(
+            client=client,
+            address=address,
+            key_pair=key_pair,
+            chain=StarknetChainId.MAINNET,
+        )
+        return account
+    
+    async def _starknetContract(self, account: Account):
+        contract = await Contract.from_address(
+            address=contracts[self.STARKNET],
+            provider=account,
+        )
+        return contract
+    
+    async def _invoke(self, contract, function, args, max_fee) -> int:
+        invocation = await contract.functions[function].invoke(*args, max_fee=max_fee)
+        result = await invocation.wait_for_acceptance()
+        tx_hash = result.hash
+        return tx_hash
+
+    async def call(self, contract, function):
+        return await contract.functions[function].call()
+    
+    async def _approve_eth(self, account, amountLow, amountHigh):
+        eth = Contract(
+            address=STARKNET_ETH_ADDRESS,
+            abi=STARKNET_ETH_ABI,
+            provider=account,
+        )
+        allowance = await eth.functions['allowance'].call(int(self.wallet.address, 0), int(contracts[self.STARKNET], 0))
+        allowance = allowance.as_tuple()
+        if allowance[0] >= amountLow: return
+        tx_hash = await self._invoke(
+            eth, 
+            'approve', 
+            (
+                int(contracts[self.STARKNET], 0), 
+                {'low': amountLow, 'high': amountHigh}
+            ), 
+            STARKNET_MAX_APPROVE_GAS
+        )
+        approve_link = f'{STARKNET_SCANNER}/{hex(tx_hash)}'
+        logger.success(f'{self.module_str} | APPROVE | {approve_link}')
+    
+    async def _mint(self) -> int:
+        account = self._accountFromKey(self.wallet.key, self.wallet.address)
+        contract = await self._starknetContract(account)
+
+        mintFee = await self.call(contract, 'getMintFee')
+        mintFeeLow = mintFee[0]
+        mintFeeHigh = 0
+        if len(mintFee) > 1:
+            mintFeeHigh = mintFee[1]
+        await self._approve_eth(account, mintFeeLow, mintFeeHigh)
+
+        nextMintId = await self.call(contract, 'getNextMintId')
+        tokenUri = encode_shortstring(str(nextMintId[0]))
+        invocation = await contract.functions['mint'].invoke(tokenUri, max_fee=STARKNET_MAX_MINT_GAS)
+        result = await invocation.wait_for_acceptance()
+        tx_hash = result.hash
+        return tx_hash
+
+    async def main(self, retry=0):
+        try:
+            tx_hash = await self._mint()
+            tx_link = f'{STARKNET_SCANNER}/{hex(tx_hash)}'
+            logger.success(f'{self.module_str} | {tx_link}')
+            list_send.append(f'{STR_DONE}{self.module_str}')
+        except Exception as error:
+            logger.error(f'{self.number} {self.wallet.address} | tx is failed | {error}')
+            if retry < RETRY:
+                logger.info(f'try again in 10 sec.')
+                await asyncio.sleep(10)
+                return await self.main(retry+1)
+            else:
+                list_send.append(f'{STR_CANCEL}{self.module_str}')
+    
+    async def run(self):
+        for i in range(self.amount_to_mint):
+            await self.main()
+            if i + 1 != self.amount_to_mint:
+                await async_sleeping(*DELAY_SLEEP)
 
 class Mint:
     def __init__(self, key, number, chains) -> None:
@@ -1003,6 +1110,7 @@ MODULES = {
     4: ("bridge", Bridger),
     5: ("check_nfts", CheckNFTs),
     6: ("refuel", Refuel),
+    7: ("starknet_mint", StarknetMint),
 }
 
 def get_module(module):
@@ -1018,27 +1126,28 @@ async def worker(func, key, number):
     function = func(number, key)
     await function.run()
 
-async def process_batches(func, wallets):
+async def process_batches(func, wallets, check_keys=True):
     batches = [wallets[i:i + WALLETS_IN_BATCH] for i in range(0, len(wallets), WALLETS_IN_BATCH)]
 
     number = 0
     for batch in batches:
         res = []
-        try:
+        # try:
+        if True:
             if CHECK_GWEI:
                 wait_gas()
 
             tasks = []
             for key in batch:
                 number += 1
-                if is_private_key(key):
+                if is_private_key(key) or not check_keys:
                     tasks.append(asyncio.create_task(worker(func, key, f'[{number}/{len(wallets)}]')))
                 else:
                     logger.error(f"{key} isn't private key")
             res = await asyncio.gather(*tasks)
 
-        except Exception as error:
-            logger.error(error)
+        # except Exception as error:
+        #     logger.error(error)
 
         if (TG_BOT_SEND and len(list_send) > 0):
             send_msg()
@@ -1059,9 +1168,20 @@ async def main(module):
     
     func, module_name = get_module(module)
 
-    if module == 5:
-        await func(WALLETS).main()
-    else:
-        if RANDOMIZER:
-            random.shuffle(WALLETS)
-        await process_batches(func, WALLETS)
+    match module:
+        case 5:
+            await func(WALLETS).main()
+        case 7:
+            wallets = await fetch_starknet_wallets()
+            if RANDOMIZER:
+                random.shuffle(wallets)
+            await process_batches(func, wallets, check_keys=False)
+        case _:
+            if RANDOMIZER:
+                random.shuffle(WALLETS)
+            await process_batches(func, WALLETS)
+
+async def fetch_starknet_wallets() -> list[StarknetWalletDTO]:
+    addresses = STARKNET_ADDRESSES
+    keys = STARKNET_KEYS
+    return [StarknetWalletDTO(key=keys[i], address=addresses[i]) for i in range(len(addresses))]

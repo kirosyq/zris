@@ -1,5 +1,8 @@
 '''
-chains : arbitrum | optimism | bsc | polygon | base | avalanche | ethereum | scroll | zksync | linea | nova | zora | polygon_zkevm | fantom | core | celo | harmony | canto
+chains : arbitrum | optimism | bsc | polygon | base | avalanche | ethereum | scroll | zksync | linea | nova | zora | polygon_zkevm | fantom | core | celo | harmony | canto | starknet
+
+!!! WARNING !!!
+starknet - MINT ONLY
 '''
 
 RETRY = 1 # Number of attempts when errors/fails occur
@@ -53,6 +56,9 @@ class ValueMint:
     '''mint'''
 
     chain = ['harmony', 'celo', 'core']
+    amount_mint = [2, 4] # Range of NFTs to mint
+
+class ValueStarknetMint:
     amount_mint = [2, 4] # Range of NFTs to mint
 
 class ValueBridge:

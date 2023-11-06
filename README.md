@@ -29,8 +29,8 @@ zerius_aio is a script that enables comprehensive interaction with https://zeriu
 
 ### Starknet Mint NFTs
 If you want to use **starknet mint nft** module:
-1. Enter the private keys for Argent/Braavos wallets into starknet_wallets.txt, each on a new line.
-2. Enter the wallet addresses into starknet_addresses.txt in the same order as the private keys.
+1. Enter the private keys for Argent/Braavos wallets into `starknet_wallets.txt`, each on a new line.
+2. Enter the wallet addresses into `starknet_addresses.txt` in the same order as the private keys.
 
 ## Dependency Installation
 

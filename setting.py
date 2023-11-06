@@ -92,9 +92,6 @@ class ValueUltra:
     from_chain = ['nova']  # Can be left empty, then the script will choose the cheapest network from 'included_chains'.
     included_chains = ['optimism', 'scroll', 'arbitrum', 'bsc', 'avalanche', 'base', 'linea']  # Must include >= 2 networks.
 
-    refuel_amount_from = 0 # Obtain from a certain amount of native token of the to_chain network
-    refuel_amount_to   = 0 # Obtain up to a certain amount of native token of the to_chain network
-
 class ValueRefuel:
 
     '''

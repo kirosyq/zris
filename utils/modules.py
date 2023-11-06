@@ -555,8 +555,6 @@ class Ultra:
             self.chains.append(self.fromChain)
         self.manager = Web3Manager(self.key, "ethereum")
         self.module_str = f'{self.number} {self.manager.address} | ultra'
-        self.refuel_to_amount = ValueUltra.refuel_amount_to
-        self.refuel_to_amount = ValueUltra.refuel_amount_from
         self.bridgeMatrix = None
 
     def get_address(self, key):
@@ -788,7 +786,7 @@ class Ultra:
         tokenId = await self.get_first_token_id_on_chain(address, contracts[srcLzChain])
         logger.info(f'{self.module_str} | start bridge token {tokenId} | {srcChainName} => {dstChainName}')
 
-        function = Bridge(self.key, self.number, srcChainName, dstChainName, self.refuel_from_amount, self.refuel_to_amount, tokenId, web3Managers[srcLzChain], self.module_str, contracts[srcLzChain])
+        function = Bridge(self.key, self.number, srcChainName, dstChainName, 0, 0, tokenId, web3Managers[srcLzChain], self.module_str, contracts[srcLzChain])
 
         retryBridge = 0
         status = 0

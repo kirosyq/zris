@@ -86,7 +86,7 @@ EXCLUDED_LZ_PAIRS = [
     (175, 214), # nova => scroll
     (175, 183), # nova => linea
     (175, 153), # nova => core
-    (175,  125), # nova => celo
+    (175, 125), # nova => celo
     (175, 116), # nova => harmony
     (175, 145), # nova => gnosis
     (151, 195), 

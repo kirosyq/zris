@@ -796,7 +796,7 @@ class Ultra:
             if not contract_txn:
                 logger.error(f'{self.module_str} | error getting contract_txn for bridge {srcChainName} -> {dstChainName}')
                 list_send.append(f'{STR_CANCEL}{self.module_str}')
-                return
+                return False, None
         
             status, tx_link = await function.manager.send_tx(contract_txn)
             if status != 1:
@@ -897,8 +897,8 @@ class Ultra:
             for chain in balancesUsd.keys():
                 if balancesUsd[chain] > Decimal(1):
                     availableChains.append(chain)
-            if len(lowcostBridgesMatrix.keys()) < 2 and srcLzChain not in availableChains:
-                logger.error(f'{self.module_str} | less than 2 chains are available, max bridge price is too low or insufficient balances')
+            if srcLzChain not in availableChains:
+                logger.error(f'{self.module_str} | cant find bridges for source chain, max bridge price is too low or insufficient balances')
                 list_send.append(f'{STR_CANCEL}{self.module_str}')
                 return
             
@@ -906,8 +906,8 @@ class Ultra:
             
             # logger.info(f'{self.module_str} | building lowcost bridges matrix')
             lowcostBridgesMatrix = await self.get_lowcost_bridges(fromAddress, contracts, tokensPricesUsd, web3Managers)
-            if len(lowcostBridgesMatrix.keys()) < 2 or srcLzChain not in lowcostBridgesMatrix.keys():
-                logger.error(f'{self.module_str} | less than 2 chains are available, max bridge price is too low or insufficient balances')
+            if srcLzChain not in lowcostBridgesMatrix.keys():
+                logger.error(f'{self.module_str} | cant find bridges for source chain, max bridge price is too low or insufficient balances')
                 list_send.append(f'{STR_CANCEL}{self.module_str}')
                 return
             

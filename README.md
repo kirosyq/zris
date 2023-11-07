@@ -9,7 +9,7 @@ zerius_aio is a script that enables comprehensive interaction with https://zeriu
 4. **bridge** - Bridges NFTs from one network to another selected network.
 5. **checker** - Observes the quantity of NFTs in the wallets across various networks.
 6. **refuel** - Transfers gas from one network to another via LayerZero.
-7 **starknet mint nft** - Mints NFTs in Starknet.
+7. **starknet mint nft** - Mints NFTs in Starknet.
 
 ## Algorithm of the 'ultra' module:
 1. Compiles a list of all networks where there is a native token (>= $1) for bridging.

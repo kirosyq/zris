@@ -405,7 +405,16 @@ class MintBridge:
             'ETH': 'ethereum',
             'MATIC': 'matic-network',
             'BNB': 'binancecoin',
-            'AVAX': 'avalanche-2'
+            'AVAX': 'avalanche-2',
+            'FTM': 'fantom',
+            'CORE': 'coredaoorg',
+            'CELO': 'celo',
+            'ONE': 'harmony',
+            'CANTO': 'canto',
+            'METIS': 'metis-token',
+            'GLMR': 'moonbeam',
+            'XDAI': 'xdai',
+            'MNT': 'mantle',
         }
         coingeckoRequestUrl = COINGECKO_URL.format(",".join(tokenToId.values()))
         response = requests.get(coingeckoRequestUrl).json()
@@ -579,7 +588,16 @@ class Ultra:
             'ETH': 'ethereum',
             'MATIC': 'matic-network',
             'BNB': 'binancecoin',
-            'AVAX': 'avalanche-2'
+            'AVAX': 'avalanche-2',
+            'FTM': 'fantom',
+            'CORE': 'coredaoorg',
+            'CELO': 'celo',
+            'ONE': 'harmony',
+            'CANTO': 'canto',
+            'METIS': 'metis-token',
+            'GLMR': 'moonbeam',
+            'XDAI': 'xdai',
+            'MNT': 'mantle',
         }
         coingeckoRequestUrl = COINGECKO_URL.format(",".join(tokenToId.values()))
         response = requests.get(coingeckoRequestUrl).json()

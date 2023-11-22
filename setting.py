@@ -38,6 +38,7 @@ MAX_GAS_CHARGE = {
     'moonriver'     : 0.5,
     'canto'         : 0.5,
     'metis'         : 0.5,
+    'mantle'        : 0.5,
 }
 
 class ValueMintBridge:

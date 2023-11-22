@@ -97,8 +97,8 @@ class ValueRefuel:
     '''
     Gas refuel via https://zerius.io/
 
-    from_chains : optimism | bsc | polygon | arbitrum | avalanche | fantom | linea | celo | zksync (temp disabled) | polygon_zkevm | nova | canto | zora | scroll | harmony | gnosis | core | base | mantle
-    to_chains   : avalanche | bsc | arbitrum | optimism | fantom | harmony | celo | moonbeam | gnosis | metis | core | polygon_zkevm | canto | zksync | nova | zora | base | scroll
+    from_chains : optimism | bsc | polygon | arbitrum | avalanche | fantom | linea | celo | zksync | polygon_zkevm | nova | canto | zora | scroll | harmony | gnosis | core | base | mantle
+    to_chains   : avalanche | bsc | arbitrum | optimism | fantom | harmony | celo | moonbeam | gnosis | metis | core | polygon_zkevm | canto | zksync | nova | zora | base | scroll | mantle
     '''
 
     from_chain = ['arbitrum', 'bsc'] # Networks from which you want to perform refuel (>= 1 network)

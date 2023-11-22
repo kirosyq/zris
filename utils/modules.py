@@ -1008,7 +1008,7 @@ class Refuel:
         self.contract = self.manager.web3.eth.contract(address=Web3.to_checksum_address(REFUEL_CONTRACTS[self.from_chain]), abi=REFUEL_ABI)
         self.amount = await self.manager.get_amount_in(self.keep_value_from, self.keep_value_to, self.swap_all_balance, LZ_CHAIN_TO_TOKEN[LAYERZERO_CHAINS_ID[self.from_chain]], self.amount_from, self.amount_to)
         self.token_data = await self.manager.get_token_info('')
-        self.value = intToDecimal(self.amount, 18)
+        self.value = await self.get_value()
         self.adapterParams = await self.get_adapterParams(self.value)
         self.module_str = f'{self.number} {self.manager.address} | zerius_refuel : {self.from_chain} => {self.to_chain}'
 
@@ -1101,6 +1101,37 @@ class Refuel:
         call_json(result, path)
         cprint(f'\nРезультаты записаны в {path}.json\n', 'blue')
         sys.exit()
+
+    async def get_value(self):
+        from_chain_token = LZ_CHAIN_TO_TOKEN[LAYERZERO_CHAINS_ID[self.from_chain]]
+        to_chain_token = LZ_CHAIN_TO_TOKEN[LAYERZERO_CHAINS_ID[self.to_chain]]
+        if (from_chain_token != to_chain_token):
+            value = (self.amount * self.get_token_usd_price(from_chain_token)) / self.get_token_usd_price(to_chain_token)
+        else: 
+            value = self.amount    
+        return intToDecimal(value, 18)
+        
+    def get_token_usd_price(self, token) -> int:
+        tokenToId = {
+            'ETH': 'ethereum',
+            'MATIC': 'matic-network',
+            'BNB': 'binancecoin',
+            'AVAX': 'avalanche-2',
+            'FTM': 'fantom',
+            'CORE': 'coredaoorg',
+            'CELO': 'celo',
+            'ONE': 'harmony',
+            'CANTO': 'canto',
+            'METIS': 'metis-token',
+            'GLMR': 'moonbeam',
+            'XDAI': 'xdai',
+            'MNT': 'mantle',
+        }
+        coingeckoRequestUrl = COINGECKO_URL.format(",".join(tokenToId.values()))
+        response = requests.get(coingeckoRequestUrl).json()
+        prices = {token: response[tokenToId[token]]["usd"] for token in tokenToId.keys()}
+        price = prices[token]
+        return price
     
     async def run(self):
         await self.setup()

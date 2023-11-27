@@ -78,7 +78,6 @@ EXCLUDED_LZ_PAIRS = [
     (195, 102), # zora => bsc
     (195, 106), # zora => avalanche
     (214, 195), # scroll => zora
-    (214, 184), # scroll => base
     (165, 214), # zksync => scroll
     (165, 195), # zksync => zora
     (183, 195), # linea => zora

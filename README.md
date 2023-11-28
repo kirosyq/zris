@@ -2,7 +2,7 @@
 
 zerius_aio is a script that enables comprehensive interaction with https://zerius.io/. For more detailed information about the project, visit: https://t.me/hodlmodeth/338 (rus)
 
-## Modules:
+## Modules:  123
 1. **ultra** - Identifies the most affordable networks where your native token balance is >= $1, locates NFTs, and bridges them to the most cost-effective networks. If there are no NFTs in the wallet, it mints and then initiates bridging. The bridging frequency is adjustable. For instance, if you set it to bridge twice, it will execute as follows: mint nft (base), bridge base => arbitrum => zksync.
 2. **mint + bridge** - Mints and bridges NFTs from a selected network to another.
 3. **mint** - Mints NFTs in the selected network.
